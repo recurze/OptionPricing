@@ -142,4 +142,5 @@ def price_option(option: Option,
     w = LSPI(k, gamma)
 
     # Step 3: Reap benefits of optimal stopping
-    return sum(greedy_exercise_payoff(path, phi, payoffs, w) for (path, phi, payoffs) in simulations) / num_paths
+    mean_payoff = sum(greedy_exercise_payoff(path, phi, payoffs, w) for (path, phi, payoffs) in simulations) / num_paths
+    return round(mean_payoff, 2)

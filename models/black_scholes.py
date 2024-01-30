@@ -58,4 +58,4 @@ def price_option(option: EuropeanOption,
         greeks["theta"] = greeks["theta"] + r*KD - q*SQ
         greeks["rho"] = greeks["rho"] - tau*KD
 
-    return value, greeks
+    return round(value, 2), greeks

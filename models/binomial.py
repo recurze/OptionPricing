@@ -41,4 +41,4 @@ def price_option(option: Option,
             # Note: for European options, current_payoff is 0
             value[j] = max(current_payoff, expected_payoff_upon_continuation)
 
-    return value[0]
+    return round(value[0], 2)
