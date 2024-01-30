@@ -93,7 +93,7 @@ See [pdf](https://www.ltnielsen.com/wp-content/uploads/Understanding.pdf).
 
 * Delta: partial derivative of V w.r.t S
 * Gamma: second partial derivative of V w.r.t S
-* Theta: partial derivative of V w.r.t $\t$
+* Theta: partial derivative of V w.r.t t
 * Vega (nu) : partial derivative of V w.r.t $\sigma$
 * Rho : partial derivative of V w.r.t r
 
