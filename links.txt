@@ -1,0 +1,35 @@
+BENCHMARKING NEURAL NETWORKS FOR AMERICAN OPTION PRICING - Anna Bauer
+https://escholarship.org/content/qt73m9c2m4/qt73m9c2m4.pdf?t=s447yg&v=lg
+https://github.com/abauer726/nn_options
+
+An Iteration Algorithm for American Options Pricing Based on Reinforcement Learning - Nan Li
+
+American option pricing with machine learning: An extension of the Longstaff-Schwartz method - Lin, Almeida
+(Basically replaces least square with svr and other regression models)
+
+Option pricing using deep learning approach based on LSTM-GRU neural networks: Case of London stock exchange - Zouaoui, Naas
+https://www.aimspress.com/aimspress-data/dsfe/2023/3/PDF/DSFE-03-03-016.pdf
+
+https://web.stanford.edu/class/cme241/lecture_slides/AmericanOptionsRL.pdf
+
+Self-attention GRU and Shapley value interpretation - Shen
+https://arxiv.org/pdf/2310.12500.pdf
+
+Optimal Stopping via Randomized Neural Networks
+https://arxiv.org/abs/2104.13669
+https://github.com/HeKrRuTe/OptStopRandNN/tree/main
+
+NN for option pricing: literature review - Ruf, Wang
+https://arxiv.org/pdf/1911.05620.pdf
+
+(Haven't read this)
+Towards a unified impl of regression MC algorithms - Ludkovski
+https://arxiv.org/pdf/2012.00729.pdf
+
+https://github.com/opendoor-labs/pyfin/tree/master
+https://github.com/dedwards25/Python_Option_Pricing/blob/master/GBS.ipynb
+https://github.com/vollib/vollib
+https://github.com/LawZhou/Israel-option-pricing/blob/main/american_pricing.py#L70
+https://github.com/YoussefAithaddou/Pricing-American-Options-with-Q-learning/blob/main/Pricing%20Options%20with%20Q-learning.ipynb
+
+https://www.kaggle.com/datasets/muhammadanas0716/tradyflow-options-trading
