@@ -82,9 +82,9 @@ Factors affecting premium:
 
 $C(S_t, t) = \phi(d_+)S_t - \phi(d_-)Ke^{-r\tau}$
 
-$sd = \sigma \sqrt{tau}$
+$sd = \sigma \sqrt{\tau}$
 
-$d_{\pm} = \frac{log(\frac{S_t}{K}) + r\tau}{sd} +/- \frac{sd}{2}$
+$d_{\pm} = \frac{log(\frac{S_t}{K}) + r\tau}{sd} \pm \frac{sd}{2}$
 
 $P(S_t, t) = Ke^{-r\tau} - S_t + C(S_t, t)$
 
@@ -110,9 +110,9 @@ Common for financial institutions to set risk limits on for each of the greeks. 
 
 Consider a one-step binomial tree where with probability p, the underlying stock price goes up to S_u and with probability 1 - p, it goes down to S_d. We might be tempted to price this by the getting the expected payoff: p(S_u - S_0), but that would be incorrect.
 
-Instead we price by replication. Consider a delta neutral portfolio with one short option and del long shares. The value of the holding would be V_0 = V(S_0, 0) - del\*S_0. Now, the value of my portfolio at T would be del\*S_u + \frac{V_0}{D} = V_u where D is the discount factor (V_0 is the forward price), or del\*S_d + \frac{V_0}{D} = V_d. Solving this, we have V_0 and del and we can find V(S_0, 0) using these.
+Instead we price by replication. Consider a delta neutral portfolio with one short option and $\delta$ long shares. The value of the holding would be $V_0 = V(S_0, 0) - \delta S_0$. Now, the value of my portfolio at T would be $\delta S_u + \frac{V_0}{D} = V_u$ where D is the discount factor ($V_0$ is the forward price), or $\delta S_d + \frac{V_0}{D} = V_d$. Solving this, we have $V_0$ and $\delta$ and we can find $V(S_0, 0)$ using these.
 
-Binomial model can be viewed as discrete version of Black-Scholes model. Consider n-step binomial tree. Now match the first two moments of S_t with that of the Black-Scholes model.
+Binomial model can be viewed as discrete version of Black-Scholes model. Consider n-step binomial tree. Now match the first two moments of $S_t$ with that of the Black-Scholes model.
 
 Binomial model can easily handle American option.
 
