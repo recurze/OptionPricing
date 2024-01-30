@@ -98,3 +98,45 @@ See [pdf](https://www.ltnielsen.com/wp-content/uploads/Understanding.pdf).
 * Rho : partial derivative of V w.r.t r
 
 Common for financial institutions to set risk limits on for each of the greeks. Delta and Gamma are the main ones for trading.
+
+
+## Binomial model
+
+Consider a one-step binomial tree where with probability p, the underlying stock price goes up to S_u and with probability 1 - p, it goes down to S_d. We might be tempted to price this by the getting the expected payoff: p(S_u - S_0), but that would be incorrect.
+
+Instead we price by replication. Consider a delta neutral portfolio with one short option and del long shares. The value of the holding would be V_0 = V(S_0, 0) - del*S_0. Now, the value of my portfolio at T would be del*S_u + V_0/D = V_u where D is the discount factor (V_0 is the forward price), or del*S_d + V_0/D = V_d. Solving this, we have V_0 and del and we can find V(S_0, 0) using these.
+
+Binomial model can be viewed as discrete version of Black-Scholes model. Consider n-step binomial tree. Now match the first two moments of S_t with that of the Black-Scholes model.
+
+Binomial model can easily handle American option.
+
+
+## Reinforcement Learning (RL) - Least-Square Policy Iteration (LSPI)
+
+See papers [Least-Square Policy Iteration](https://users.cs.duke.edu/~parr/jmlr03.pdf) and [Learning Exercise Policies for American Options](https://proceedings.mlr.press/v5/li09d/li09d.pdf).
+
+American option can be formulated as a finite-horizon optimal stopping problem (best time to exercise). LSPI solves this through [policy iteration](https://en.wikipedia.org/wiki/Markov_decision_process#Policy_iteration). It uses Least-Square [Temporal Differencing](https://en.wikipedia.org/wiki/Temporal_difference_learning) [Q-learning](https://en.wikipedia.org/wiki/Q-learning) to improve the value which in turn is used to improve the policy, and this goes on until there's no change in policy. As for "least-square" part of LSPI, instead of using Q directly, we approximate Q as dot(w, phi(s, a)) where phi is the feature map. Writing the bellman equation in matrix form and plugging in approximate Q gives us a nice system of linear equations in the form Ax = b that we solve.
+
+Once we have the policy, we can go ahead and calculate the expected payoff by simulating paths the spot price might take. For this we use GBM. Alternatives are [GARCH](https://en.wikipedia.org/wiki/Autoregressive_conditional_heteroskedasticity) and Heston model. The expected payoff is nothing but the fair value of the option.
+
+To summarize the algorithm:
+1. Simulate price paths
+2. Solve optimal stopping problem using LSPI
+3. Calculate expected payoff using the optimal policy across numerous simulations.
+
+LSPI:
+    pi <- initial policy
+    do:
+        pi' <- pi
+        pi <- LSTDQ(..., pi')
+    until pi' = pi
+
+
+## Future/Todo
+
+* Add [regression tests](https://en.wikipedia.org/wiki/Regression_testing)
+* Improve LSPI speed so that we can increase the number of simulated paths.
+* Improve LSPI variance: maybe average out multiple runs of LSPI?
+* Use real world data to compare payoffs: [Kaggle $SPY](https://www.kaggle.com/datasets/kylegraupe/spy-daily-eod-options-quotes-2020-2022), [Kaggle $AAPL](https://www.kaggle.com/datasets/kylegraupe/aapl-options-data-2016-2020)
+* Implement [Longstaff-Schwartz least-squares method](https://people.math.ethz.ch/~hjfurrer/teaching/LongstaffSchwartzAmericanOptionsLeastSquareMonteCarlo.pdf).
+* Implement RNNs like LSTM or GRU.
