@@ -22,15 +22,19 @@ Premium is income to the issuer regardless of whether the option is exercised.
 The price can be split into 2 components:
 
 1. intrinsic value (for the holder):
+
     a. put : max(strike - spot, 0)
     b. call: max(spot - strike, 0)
+
 2. extrinsic value (time value): premium - intrinsic
 
 The extrinsic value is the risk that the writer takes on.
 
 Factors affecting premium:
 1. price of underlying
+
     a. payment of dividends decreases price too
+
 2. how far strike price is from spot price
 3. volatility of underlying
 
@@ -76,14 +80,16 @@ Factors affecting premium:
 
 ### Solution
 
-$C(S_t, t) = \phi(d_+)S_t - \phi(d_-)Ke^(-r\tau)$
-$sd = \sigma \tau^0.5$
-$d_+/- = (log(S_t/K) + r\tau)/sd +/- 0.5sd$
+$C(S_t, t) = \phi(d_+)S_t - \phi(d_-)Ke^{-r\tau}$
 
-$P(S_t, t) = Ke^(-r\tau) - S_t + C(S_t, t)$
+$sd = \sigma \sqrt{tau}$
+
+$d_{\pm} = \frac{log(\frac{S_t}{K}) + r\tau}{sd} +/- \frac{sd}{2}$
+
+$P(S_t, t) = Ke^{-r\tau} - S_t + C(S_t, t)$
 
 
-Alternatively, $D = e^(-r\tau)$ and $S = DF$ and $C - P = D(F - K)$.
+Alternatively, $D = e^{-r\tau}$ and $S = DF$ and $C - P = D(F - K)$.
 
 ### Interpretation
 
@@ -104,7 +110,7 @@ Common for financial institutions to set risk limits on for each of the greeks. 
 
 Consider a one-step binomial tree where with probability p, the underlying stock price goes up to S_u and with probability 1 - p, it goes down to S_d. We might be tempted to price this by the getting the expected payoff: p(S_u - S_0), but that would be incorrect.
 
-Instead we price by replication. Consider a delta neutral portfolio with one short option and del long shares. The value of the holding would be V_0 = V(S_0, 0) - del*S_0. Now, the value of my portfolio at T would be del*S_u + V_0/D = V_u where D is the discount factor (V_0 is the forward price), or del*S_d + V_0/D = V_d. Solving this, we have V_0 and del and we can find V(S_0, 0) using these.
+Instead we price by replication. Consider a delta neutral portfolio with one short option and del long shares. The value of the holding would be V_0 = V(S_0, 0) - del\*S_0. Now, the value of my portfolio at T would be del\*S_u + \frac{V_0}{D} = V_u where D is the discount factor (V_0 is the forward price), or del\*S_d + \frac{V_0}{D} = V_d. Solving this, we have V_0 and del and we can find V(S_0, 0) using these.
 
 Binomial model can be viewed as discrete version of Black-Scholes model. Consider n-step binomial tree. Now match the first two moments of S_t with that of the Black-Scholes model.
 
@@ -124,12 +130,14 @@ To summarize the algorithm:
 2. Solve optimal stopping problem using LSPI
 3. Calculate expected payoff using the optimal policy across numerous simulations.
 
+```
 LSPI:
     pi <- initial policy
     do:
         pi' <- pi
         pi <- LSTDQ(..., pi')
     until pi' = pi
+```
 
 
 ## Future/Todo
