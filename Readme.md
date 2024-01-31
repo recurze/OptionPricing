@@ -143,7 +143,6 @@ LSPI:
 ## Future/Todo
 
 * Add [regression tests](https://en.wikipedia.org/wiki/Regression_testing)
-* Improve LSPI speed so that we can increase the number of simulated paths.
 * Improve LSPI variance: maybe average out multiple runs of LSPI?
 * Use real world data to compare payoffs: [Kaggle $SPY](https://www.kaggle.com/datasets/kylegraupe/spy-daily-eod-options-quotes-2020-2022), [Kaggle $AAPL](https://www.kaggle.com/datasets/kylegraupe/aapl-options-data-2016-2020)
 * Implement [Longstaff-Schwartz least-squares method](https://people.math.ethz.ch/~hjfurrer/teaching/LongstaffSchwartzAmericanOptionsLeastSquareMonteCarlo.pdf).
