@@ -133,4 +133,5 @@ def price_option(option: Option,
 
     # Step 3: Compute expected payoff
     expected_payoff = greedy_exercise_payoff(w)
-    return round(expected_payoff, 2)
+    immediate_payoff = option.payoff(option.underlying.spot_price, time_to_maturity_in_years)
+    return round(max(expected_payoff, immediate_payoff), 2)
