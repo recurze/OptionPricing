@@ -18,7 +18,7 @@ def price_option(option: Option,
                  volatility: float,
                  time_to_maturity_in_years: float,
                  calibrator: Callable = crr_calibrator,
-                 num_steps: int = 1) -> PriceType:
+                 num_steps: int = 50) -> PriceType:
 
     r = risk_free_rate
     t = time_to_maturity_in_years / num_steps
