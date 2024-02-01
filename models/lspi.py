@@ -10,26 +10,32 @@ from options import Option
 from options import PriceType
 
 
-def feature_map(S: PriceType,
-                t: float,
-                T: float,
-                dt: float,
-                num_steps: int) -> np.ndarray:
+def feature_maps(simulated_paths: list[list[PriceType]],
+                 K: PriceType,
+                 T: float,
+                 num_paths: int,
+                 num_steps: int) -> np.ndarray:
 
-    if t == num_steps:
-        return np.zeros(7)
-
-    # dt = T/num_steps
-    return np.array([
-        1,
-        math.exp(-S/2),
-        math.exp(-S/2) * (1 - S),
-        math.exp(-S/2) * (1 - 2*S + 0.5*S*S),
-
-        math.sin(0.5 * math.pi * (1 - t/num_steps)),
-        math.log(T - t*dt) if t != num_steps else 0,
-        (t / num_steps)**2
+    S = np.array(simulated_paths).flatten() / K
+    fs = np.vstack([
+        np.ones_like(S),
+        np.exp(-S/2),
+        np.exp(-S/2) * (1 - S),
+        np.exp(-S/2) * (1 - 2*S + 0.5*S*S)
     ])
+
+    t = np.arange(num_steps)
+
+    dt = T / num_steps
+    ft = np.vstack([
+        np.sin(0.5 * math.pi * (1 - t/num_steps)),
+        np.log(T - t*dt),
+        (t / num_steps) ** 2
+    ])
+    ft = np.hstack([ft, np.array([0, 0, 1]).reshape(3, 1)])
+    ft = np.tile(ft, num_paths)
+
+    return np.vstack([fs, ft])
 
 
 def price_option(option: Option,
@@ -59,16 +65,13 @@ def price_option(option: Option,
     ]
     total_num_price_points = num_paths * (num_steps + 1)
 
-    phi = np.array([
-        feature_map(
-            S=S,
-            t=t,
-            T=time_to_maturity_in_years,
-            dt=dt,
-            num_steps=num_steps
-        )
-        for path in simulated_paths for (t, S) in enumerate(path)
-    ]).T
+    phi = feature_maps(
+        simulated_paths=simulated_paths,
+        K=option.strike_price,
+        T=time_to_maturity_in_years,
+        num_paths=num_paths,
+        num_steps=num_steps
+    )
     assert phi.shape[1] == total_num_price_points
 
     payoffs = np.array([
