@@ -78,8 +78,8 @@ def compute_implied_volatility(option: Option,
         return None
 
     # https://github.com/opendoor-labs/pyfin/blob/master/pyfin/pyfin.py#L55C1-L55C66
-    def binary_search(min_vol: float = 0.01,
-                      max_vol: float = 0.99,
+    def binary_search(min_vol: float = -0.01,
+                      max_vol: float = 100,
                       tol: float = 1e-6,
                       maxiter: int = 100) -> float:
         def f(vol):
