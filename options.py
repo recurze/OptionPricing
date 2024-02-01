@@ -53,7 +53,7 @@ class Option:
 
 class EuropeanOption(Option):
     def payoff(self, spot_price: PriceType, time_to_maturity_in_years: float = 0) -> PriceType:
-        return 0 if time_to_maturity_in_years != 0 else super().simple_payoff(spot_price)
+        return 0 if time_to_maturity_in_years > 1e-8 else super().simple_payoff(spot_price)
 
 
 class AmericanOption(Option):
