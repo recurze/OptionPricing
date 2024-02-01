@@ -5,28 +5,9 @@
 import math
 import numpy as np
 
+from gbm import GeometricBrownianMotion
 from options import Option
 from options import PriceType
-
-
-def simulate_prices(starting_price: PriceType,
-                    mu: float,
-                    sigma: float,
-                    dt: float,
-                    num_steps: int) -> list[PriceType]:
-
-    # Geometric Brownian Motion
-    # W_t+dt - W_t ~ N(0, dt)
-    # S_t+dt = S_t * exp((mu - 1/2 sigma^2)dt) * exp(sigma * (W_t+dt - W_t))
-
-    multiplicative_factor = math.exp((mu - 0.5 * (sigma ** 2)) * dt)
-    noise = np.exp(sigma * np.random.normal(0, dt ** 0.5, num_steps))
-
-    path = [starting_price]
-    for t in range(num_steps):
-        path.append(path[t] * multiplicative_factor * noise[t])
-
-    return path
 
 
 def feature_map(S: PriceType,
@@ -67,8 +48,8 @@ def price_option(option: Option,
 
     # Step 1: Simulation
     simulated_paths = [
-        simulate_prices(
-            starting_price=option.underlying.spot_price,
+        GeometricBrownianMotion.simulate(
+            init=option.underlying.spot_price,
             mu=drift,
             sigma=volatility,
             dt=dt,
