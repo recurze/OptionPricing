@@ -16,7 +16,6 @@ def price_option(option: EuropeanOption,
     q = option.dividend_yield
     sigma = volatility
 
-    # Time to maturity
     tau = time_to_maturity_in_years
 
     # Compute d +/-
