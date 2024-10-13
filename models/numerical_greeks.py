@@ -1,71 +1,79 @@
-import copy
+from enum import Enum
+from options import Option
+from options import PriceType
 from typing import Callable
 
-from options import Option
+
+class GreekType(Enum):
+    DELTA = "DELTA"
+    GAMMA = "GAMMA"
+    THETA = "THETA"
+    RHO = "RHO"
+    VEGA = "VEGA"
 
 
-def compute_numerical_greeks(option: Option, pricer: Callable, **kwargs) -> dict[str, float]:
-    def compute_delta(finite_difference_percentage: float) -> float:
-        finite_difference = finite_difference_percentage * option.underlying.spot_price
+def numerical_greeks(greek_type: GreekType,
+                     pricer: Callable,
+                     option: Option,
+                     S: PriceType,
+                     r: float,
+                     q: float | None,
+                     vol: float,
+                     T: float,
+                     **kwargs) -> float:
 
-        up = copy.deepcopy(option)
-        up.underlying.spot_price += finite_difference
+    def compute_delta(finite_difference_ratio: float = 0.001) -> float:
+        assert finite_difference_ratio > 0
+        finite_difference = finite_difference_ratio * S
 
-        down = copy.deepcopy(option)
-        down.underlying.spot_price -= finite_difference
-
-        high = pricer(up, **kwargs)
-        low = pricer(down, **kwargs)
+        high = pricer(option, S + finite_difference, r, q, vol, T, **kwargs)
+        low = pricer(option, S - finite_difference, r, q, vol, T, **kwargs)
 
         return (high - low) / (2 * finite_difference)
 
-    def compute_gamma(finite_difference_percentage: float) -> float:
-        finite_difference = finite_difference_percentage * option.underlying.spot_price
+    def compute_gamma(finite_difference_ratio: float = 0.001) -> float:
+        assert finite_difference_ratio > 0
+        finite_difference = finite_difference_ratio * S
 
-        up = copy.deepcopy(option)
-        up.underlying.spot_price += finite_difference
+        high = pricer(option, S + finite_difference, r, q, vol, T, **kwargs)
+        same = pricer(option, S, r, q, vol, T, **kwargs)
+        low = pricer(option, S - finite_difference, r, q, vol, T, **kwargs)
 
-        down = copy.deepcopy(option)
-        down.underlying.spot_price -= finite_difference
+        return (high - 2*same + low) / (finite_difference * finite_difference)
 
-        high = pricer(up, **kwargs)
-        low = pricer(down, **kwargs)
-        same = pricer(option, **kwargs)
+    def compute_theta(finite_difference: float = 0.004) -> float:
+        assert T >= finite_difference
+        assert finite_difference != 0
 
-        return (high - 2*same + low) / (2 * finite_difference * finite_difference)
-
-    def compute_theta(finite_difference: float) -> float:
-        now = pricer(option, **kwargs)
-
-        kwargs["time_to_maturity_in_years"] -= finite_difference
-        later = pricer(option, **kwargs)
+        now = pricer(option, S, r, q, vol, T, **kwargs)
+        later = pricer(option, S, r, q, vol, T - finite_difference, **kwargs)
 
         return (later - now) / finite_difference
 
-    def compute_rho(finite_difference: float) -> float:
-        kwargs["risk_free_rate"] -= finite_difference
-        low = pricer(option, **kwargs)
+    def compute_rho(finite_difference: float = 0.0001) -> float:
+        assert finite_difference != 0
 
-        kwargs["risk_free_rate"] += finite_difference
-        high = pricer(option, **kwargs)
-
-        return (high - low) / (2 * finite_difference)
-
-    def compute_vega(finite_difference_percentage: float) -> float:
-        finite_difference = finite_difference_percentage * kwargs["volatility"]
-
-        kwargs["volatility"] -= finite_difference
-        low = pricer(option, **kwargs)
-
-        kwargs["volatility"] += finite_difference
-        high = pricer(option, **kwargs)
+        high = pricer(option, S, r + finite_difference, q, vol, T, **kwargs)
+        low = pricer(option, S, r - finite_difference, q, vol, T, **kwargs)
 
         return (high - low) / (2 * finite_difference)
 
-    return {
-        "delta": compute_delta(0.1),
-        "gamma": compute_gamma(0.1),
-        "theta": compute_theta(0.004),
-        "vega": compute_vega(0.1),
-        "rho": compute_rho(0.0001),
-    }
+    def compute_vega(finite_difference_ratio: float = 0.001) -> float:
+        assert finite_difference_ratio > 0
+        finite_difference = finite_difference_ratio * vol
+
+        high = pricer(option, S, r, q, vol + finite_difference, T, **kwargs)
+        low = pricer(option, S, r, q, vol - finite_difference, T, **kwargs)
+
+        return (high - low) / (2 * finite_difference)
+
+    if greek_type == GreekType.DELTA:
+        return compute_delta()
+    if greek_type == GreekType.GAMMA:
+        return compute_gamma()
+    if greek_type == GreekType.THETA:
+        return compute_theta()
+    if greek_type == GreekType.VEGA:
+        return compute_vega() / 100
+    if greek_type == GreekType.RHO:
+        return compute_rho() / 100
