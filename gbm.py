@@ -1,38 +1,43 @@
 import numpy as np
 
 
-class GeometricBrownianMotion:
-    @staticmethod
-    def simulate(init: float,
-                 mu: float,
-                 sigma: float,
-                 dt: float,
-                 num_steps: int) -> list[float]:
+def simulate1d(init: float,
+               mu: float,
+               sigma: float,
+               steps: np.ndarray) -> list[float]:
+    dt = steps[1:] - steps[:-1]
+    num_steps = len(steps) - 1
 
-        # W_t+dt - W_t ~ N(0, dt)
-        # S_t+dt = S_t * exp((mu - 1/2 sigma^2)dt) * exp(sigma * (W_t+dt - W_t))
+    Z = np.random.standard_normal(num_steps)
 
-        multiplicative_factor = np.exp((mu - 0.5 * (sigma ** 2)) * dt)
-        noise = np.exp(sigma * np.random.normal(0, dt ** 0.5, num_steps))
+    mf = np.exp(dt * (mu - 0.5 * (sigma ** 2)))
+    noise = np.exp(np.sqrt(dt) * sigma * Z)
 
-        path = [init]
-        for t in range(num_steps):
-            path.append(path[t] * multiplicative_factor * noise[t])
+    path = [init]
+    for t in range(num_steps):
+        path.append(path[t] * mf[t] * noise[t])
 
-        return path
+    return path
 
-    @staticmethod
-    def estimate_parameters(series: np.ndarray, dt: float) -> tuple[float, float]:
-        # Ref:
-        # https://allenfrostline.com/blog/estimation-brownian-motion/
-        # https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/08.03-Binomial-Model-for-Pricing-Options.html
 
-        log_series_diff = np.diff(np.log(series))
+def simulate2d(init: np.ndarray,
+               mu: np.ndarray,
+               sigma: np.ndarray,
+               cov: np.ndarray,
+               steps: np.ndarray) -> tuple[list[float], list[float]]:
+    dt = steps[1:] - steps[:-1]
+    num_steps = len(steps) - 1
 
-        observed_mean = np.mean(log_series_diff)
-        observed_var = np.var(log_series_diff)
+    # CZ ~ N(0, CC^T) where Z ~ N(0, I)
+    C = np.linalg.cholesky(cov)
+    Z = np.random.standard_normal((num_steps, init.shape[0]))
+    W = Z.dot(C.T)
 
-        estimated_mu = (2*observed_mean + observed_var) / (2 * dt)
-        estimated_sigma = observed_var / dt
+    mf = np.exp(dt[:, np.newaxis] * (mu - 0.5 * (sigma ** 2)))
+    noise = np.exp(np.sqrt(dt[:, np.newaxis]) * sigma * W)
 
-        return estimated_mu, estimated_sigma ** 0.5
+    path = [init]
+    for t in range(num_steps):
+        path.append(path[t] * mf[t] * noise[t])
+
+    return ([s[0] for s in path], [s[1] for s in path])
