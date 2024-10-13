@@ -1,61 +1,83 @@
-from datetime import date
+from abc import abstractmethod
 from enum import Enum
-from typing import Optional
+from utils import is_close
 
 
-QtyType = int
-PriceType = float  # please don't kill me
-TickerType = str
+PriceType = float
 
 
 class OptionType(Enum):
-    CALL = 1
-    PUT = 2
+    CALL = "CALL"
+    PUT = "PUT"
 
 
-class Stock:
-    def __init__(self, ticker: TickerType, spot_price: PriceType):
-        self.ticker = ticker
-        self.spot_price = spot_price
-
-
-class Option:
-    def __init__(self,
-                 option_type: OptionType,
-                 underlying: Stock,
-                 dividend_yield: Optional[PriceType],
-                 qty: QtyType,
-                 strike_price: PriceType,
-                 expiration_date: date):
+class BaseOption:
+    def __init__(self, K: PriceType, option_type: OptionType):
+        self.K = K
         self.option_type = option_type
-
-        self.underlying = underlying
-        self.dividend_yield = dividend_yield or 0
-
-        self.qty = qty
-        self.strike_price = strike_price
-        self.expiration_date = expiration_date
 
     def is_call(self) -> bool:
         return self.option_type == OptionType.CALL
 
     def is_put(self) -> bool:
-        return not self.is_call()
+        return self.option_type == OptionType.PUT
 
-    def simple_payoff(self, spot_price: PriceType) -> PriceType:
+    def simple_payoff(self, S: PriceType) -> PriceType:
         if self.is_call():
-            return max(spot_price - self.strike_price, 0)
-        return max(self.strike_price - spot_price, 0)
-
-    def payoff(self, spot_price: PriceType, time_to_maturity_in_years: float = 0) -> PriceType:
+            return max(S - self.K, 0)
+        if self.is_put():
+            return max(self.K - S, 0)
         raise NotImplementedError()
 
 
-class EuropeanOption(Option):
-    def payoff(self, spot_price: PriceType, time_to_maturity_in_years: float = 0) -> PriceType:
-        return 0 if time_to_maturity_in_years > 1e-8 else super().simple_payoff(spot_price)
+class PathIndependentOption(BaseOption):
+    @abstractmethod
+    def payoff(self, S: PriceType, T: float = 0) -> PriceType:
+        pass
+
+    @abstractmethod
+    def quanto_payoff(self, Sa: PriceType, Sb: PriceType, T: float = 0) -> PriceType:
+        pass
 
 
-class AmericanOption(Option):
-    def payoff(self, spot_price: PriceType, time_to_maturity_in_years: float = 0) -> PriceType:
-        return super().simple_payoff(spot_price)
+class PathDependentOption(BaseOption):
+    @abstractmethod
+    def payoff(self, S: list[PriceType], T: float = 0) -> PriceType:
+        pass
+
+    @abstractmethod
+    def quanto_payoff(self, Sa: list[PriceType], Sb: PriceType, T: float = 0) -> PriceType:
+        pass
+
+
+Option = PathDependentOption | PathIndependentOption
+
+
+class EuropeanOption(PathIndependentOption):
+    def payoff(self, S: PriceType, T: float = 0) -> PriceType:
+        return 0 if not is_close(T, 0) else super().simple_payoff(S)
+
+    def quanto_payoff(self, Sa: PriceType, Sb: PriceType, T: float = 0) -> PriceType:
+        return Sb * self.payoff(Sa, T)
+
+
+class AmericanOption(PathIndependentOption):
+    def payoff(self, S: PriceType, T: float = 0) -> PriceType:
+        return super().simple_payoff(S)
+
+
+class EuropeanBinaryOption(PathIndependentOption):
+    def __init__(self, fixed_payoff: PriceType = 1, **kwargs):
+        self.fixed_payoff = fixed_payoff
+        super().__init__(**kwargs)
+
+    def payoff(self, S: PriceType, T: float = 0) -> PriceType:
+        return 0 if not is_close(T, 0) or super().simple_payoff(S) == 0 else self.fixed_payoff
+
+
+class AsianOption(PathDependentOption):
+    def payoff(self, S: list[PriceType], T: float = 0) -> PriceType:
+        return super().simple_payoff(sum(S) / len(S))
+
+    def quanto_payoff(self, Sa: list[PriceType], Sb: PriceType, T: float = 0) -> PriceType:
+        return Sb * self.payoff(Sa, T)
