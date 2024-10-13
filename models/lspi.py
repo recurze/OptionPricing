@@ -2,11 +2,11 @@
 # LSPI: https://users.cs.duke.edu/~parr/jmlr03.pdf
 # LSPI for Options: https://proceedings.mlr.press/v5/li09d/li09d.pdf
 
+import gbm
 import math
 import numpy as np
 
-from gbm import GeometricBrownianMotion
-from options import Option
+from options import AmericanOption
 from options import PriceType
 
 
@@ -38,10 +38,12 @@ def feature_maps(simulated_paths: list[list[PriceType]],
     return np.vstack([fs, ft])
 
 
-def price_option(option: Option,
-                 risk_free_rate: float,
-                 volatility: float,
-                 time_to_maturity_in_years: float,
+def price_option(option: AmericanOption,
+                 S: PriceType,
+                 r: float,
+                 q: float | None,
+                 sigma: float,
+                 T: float,
                  # For simulations
                  num_paths: int = 5000,
                  num_steps: int = 50,
@@ -49,39 +51,25 @@ def price_option(option: Option,
                  tol: float = 1e-6,
                  maxiter: int = 20) -> PriceType:
 
-    dt = time_to_maturity_in_years / num_steps
-    drift = risk_free_rate - option.dividend_yield
+    dt = T / num_steps
+    mu = r - (q or 0)
 
     # Step 1: Simulation
-    simulated_paths = [
-        GeometricBrownianMotion.simulate(
-            init=option.underlying.spot_price,
-            mu=drift,
-            sigma=volatility,
-            dt=dt,
-            num_steps=num_steps
-        )
-        for j in range(num_paths)
-    ]
+    steps = np.arange(0, T + dt/2, dt)
+    simulated_paths = [gbm.simulate1d(S, mu, sigma, steps) for j in range(num_paths)]
     total_num_price_points = num_paths * (num_steps + 1)
 
-    phi = feature_maps(
-        simulated_paths=simulated_paths,
-        K=option.strike_price,
-        T=time_to_maturity_in_years,
-        num_paths=num_paths,
-        num_steps=num_steps
-    )
+    phi = feature_maps(simulated_paths, option.K, T, num_paths, num_steps)
     assert phi.shape[1] == total_num_price_points
 
     payoffs = np.array([
-        option.payoff(S, time_to_maturity_in_years - t*dt)
+        option.payoff(S, T - t*dt)
         for path in simulated_paths for (t, S) in enumerate(path)
     ])
     assert payoffs.shape == (total_num_price_points,)
 
     k = phi.shape[0]
-    gamma = math.exp(-risk_free_rate * dt)
+    gamma = math.exp(-r * dt)
 
     A = phi @ phi.T
     assert A.shape == (k, k)
@@ -136,5 +124,6 @@ def price_option(option: Option,
 
     # Step 3: Compute expected payoff
     expected_payoff = greedy_exercise_payoff(w)
-    immediate_payoff = option.payoff(option.underlying.spot_price, time_to_maturity_in_years)
-    return round(max(expected_payoff, immediate_payoff), 2)
+    immediate_payoff = option.payoff(S, T)
+
+    return max(expected_payoff, immediate_payoff)
