@@ -1,44 +1,49 @@
 import math
-from typing import Callable
 
+from calibrators import crr_calibrator
 from options import Option
+from options import AmericanOption
+from options import EuropeanOption
 from options import PriceType
-
-
-# Note: there are alternate calibrators like Jarrow-Rudd and Tian.
-def crr_calibrator(r: float, vol: float, t: float) -> tuple[float, float, float]:
-    b = math.exp((r + vol*vol) * t) + math.exp(-r*t)
-    u = (b + math.sqrt(b*b - 4)) / 2
-    p = (u*math.exp(r*t) - 1) / (u*u - 1) if u != 1 else 1/2
-    return (u, 1/u, p)
+from pricer import black_scholes
+from typing import Callable
 
 
 def price_option(option: Option,
-                 risk_free_rate: float,
-                 volatility: float,
-                 time_to_maturity_in_years: float,
+                 S: PriceType,
+                 r: float,
+                 q: float | None,
+                 vol: float,
+                 T: float,
                  calibrator: Callable = crr_calibrator,
                  num_steps: int = 50) -> PriceType:
+    mu = r - (q or 0)
+    dt = T / num_steps
+    u, d, p = calibrator(mu, vol, dt)
 
-    r = risk_free_rate
-    t = time_to_maturity_in_years / num_steps
-
-    # To handle dividends, see:
-    # https://homepage.ntu.edu.tw/~jryanwang/courses/Financial%20Computation%20or%20Financial%20Engineering%20(graduate%20level)/FE_Ch04%20Binomial%20Tree%20Model.pdf
-    u, d, p = calibrator(r - option.dividend_yield, volatility, t)
-
-    S = option.underlying.spot_price
     value = [option.payoff((u ** (num_steps - i)) * (d ** i) * S) for i in range(num_steps + 1)]
 
-    discount_factor = math.exp(-r*t)
     for i in range(num_steps - 1, -1, -1):
         for j in range(i + 1):
-            current_time_to_maturity = time_to_maturity_in_years - i*t
+            tau = T - i*dt
 
-            current_payoff = option.payoff((u ** (i - j)) * (d ** j) * S, current_time_to_maturity)
-            expected_payoff_upon_continuation = discount_factor * (p*value[j] + (1 - p)*value[j + 1])
+            current_spot = (u ** (i - j)) * (d ** j) * S
+            current_payoff = option.payoff(current_spot, tau)
 
-            # Note: for European options, current_payoff is 0
+            if i == num_steps - 1 and isinstance(option, AmericanOption):
+                # Attempt to smoothen:
+                # Typically, the final time slice is non-differentiable at strike, but Black-Scholes formula is.
+                # AmericanOption that is not exercised at the penultimate step can be treated as an EuropeanOption.
+                european_option = EuropeanOption(option.K, option.option_type)
+                expected_payoff_upon_continuation = black_scholes.price_option(european_option,
+                                                                               current_spot,
+                                                                               r,
+                                                                               q,
+                                                                               vol,
+                                                                               tau)
+            else:
+                expected_payoff_upon_continuation = math.exp(-r*dt) * (p*value[j] + (1 - p)*value[j + 1])
+
             value[j] = max(current_payoff, expected_payoff_upon_continuation)
 
-    return round(value[0], 2)
+    return value[0]
