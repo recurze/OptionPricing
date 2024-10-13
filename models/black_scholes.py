@@ -1,60 +1,64 @@
 import math
-from scipy.stats import norm
 
 from options import EuropeanOption
 from options import PriceType
+from scipy.stats import norm  # type: ignore[import-untyped]
+from scipy.optimize import bisect  # type: ignore[import-untyped]
+from typing import Callable
+
+
+def undiscounted_pricer(option: EuropeanOption,
+                        F: PriceType,
+                        vol: float,
+                        T: float) -> PriceType:
+    sd = vol * math.sqrt(T)
+    d1 = math.log(F / option.K)/sd + sd/2
+    d2 = d1 - sd
+
+    K = option.K
+    return F*norm.cdf(d1) - K*norm.cdf(d2) if option.is_call() else K*norm.cdf(-d2) - F*norm.cdf(-d1)
+
+
+def compute_implied_volatility(option: EuropeanOption,
+                               value: PriceType,
+                               F: PriceType,
+                               T: float,
+                               pricer: Callable = undiscounted_pricer) -> float:
+
+    def binary_search(f: Callable,
+                      min_x: float,
+                      max_x: float,
+                      tol: float = 1e-6,
+                      maxiter: int = 100) -> float:
+        return bisect(f, min_x, max_x, xtol=tol, maxiter=maxiter)
+
+    return binary_search(lambda vol: pricer(option, F, vol, T) - value, min_x=-0.01, max_x=100)
 
 
 def price_option(option: EuropeanOption,
-                 risk_free_rate: float,
-                 volatility: float,
-                 time_to_maturity_in_years: float) -> tuple[PriceType, dict[str, float]]:
-    # Using standard notation (also more concise)
-    S = option.underlying.spot_price
-    K = option.strike_price
-    r = risk_free_rate
-    q = option.dividend_yield
-    sigma = volatility
+                 S: PriceType,
+                 r: float,
+                 q: float | None,
+                 vol: float,
+                 T: float) -> PriceType:
+    mu = r - (q or 0)
+    fwd = S * math.exp(mu*T)
+    discount = math.exp(-r*T)
+    return discount * undiscounted_pricer(option, fwd, vol, T)
 
-    tau = time_to_maturity_in_years
 
-    # Compute d +/-
-    sqrt_tau = math.sqrt(tau)
-    sd = sigma * sqrt_tau
-
-    d1 = (math.log(S / K) + (r - q) * tau)/sd + sd/2
-    d2 = d1 - sd
-
-    d1_cdf = norm.cdf(d1)
-    d1_pdf = norm.pdf(d1)
-    d2_cdf = norm.cdf(d2)
-
-    # Compute value and greeks
-    # * Delta: partial derivative of V w.r.t S
-    # * Gamma: second partial derivative of V w.r.t S
-    # * Theta: partial derivative of V w.r.t t
-    # * Vega (nu) : partial derivative of V w.r.t $\sigma$
-    # * Rho : partial derivative of V w.r.t r
-
-    # Discount factor and dividends
-    D = math.exp(-r*tau)
-    Q = math.exp(-q*tau)
-
-    SQ, KD = S*Q, K*D
-    value = SQ*d1_cdf - KD*d2_cdf
-    greeks = {
-        "delta": Q*d1_cdf,
-        "gamma": (Q*d1_pdf) / (S*sd),
-        "theta": - (SQ*d1_pdf*sigma) / (2*sqrt_tau) - r*KD*d2_cdf + q*SQ*d1_cdf,
-        "vega": SQ*d1_pdf*sqrt_tau,
-        "rho":  K*tau*D*d2_cdf,
-    }
-
-    if option.is_put():
-        # P = C - SQ + KD
-        value = value - SQ + KD
-        greeks["delta"] = greeks["delta"] - Q
-        greeks["theta"] = greeks["theta"] + r*KD - q*SQ
-        greeks["rho"] = greeks["rho"] - tau*KD
-
-    return round(value, 2), greeks
+def price_quanto_option(option: EuropeanOption,
+                        F: PriceType,
+                        Sa: PriceType,
+                        Sb: PriceType,
+                        ra: float,
+                        rb: float,
+                        rd: float,
+                        rho: float,
+                        volA: float,
+                        volB: float,
+                        T: float) -> PriceType:
+    mu = rd - ra + (rho * volA * volB)
+    fwd = Sa * math.exp(mu*T)
+    discount = math.exp(-rb*T)
+    return F * Sb * discount * undiscounted_pricer(option, fwd, volA, T)
