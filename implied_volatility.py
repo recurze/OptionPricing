@@ -65,7 +65,10 @@ def compute_implied_volatility(option: Option,
                 maxiter: int = 100) -> float | None:
         vol = initial_guess_vol
         for i in range(maxiter):
-            computed_value, greeks = pricer(option, S, r, q, T, vol, **kwargs)
+            try:
+                computed_value, greeks = pricer(option, S, r, q, vol, T, **kwargs)
+            except TypeError:
+                return None
 
             vega = greeks["vega"]
             if abs(vega) < eps:
@@ -84,8 +87,8 @@ def compute_implied_volatility(option: Option,
                       tol: float = 1e-6,
                       maxiter: int = 100) -> float:
         def f(vol):
-            computed_value, greeks = pricer(option, S, r, q, T, vol, **kwargs)
-            return value - computed_value
+            computed_value = pricer(option, S, r, q, vol, T, **kwargs)
+            return value - (computed_value[0] if isinstance(computed_value, tuple) else computed_value)
 
         return bisect(f, min_vol, max_vol, xtol=tol, maxiter=maxiter)
 
