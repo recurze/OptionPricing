@@ -78,6 +78,10 @@ Factors affecting premium:
 5. Our portfolio is riskless, so has risk-free rate of return.
 6. Use 3, 4 and 5 to eliminate $\Pi$ and receive the BS equation.
 
+$$
+\partial V \over \partial t + rS \partial V \over \partial S + \partial^2 V \over \partial S^2 = 0
+$$
+
 ### Solution
 
 $C(S_t, t) = \phi(d_+)S_t - \phi(d_-)Ke^{-r\tau}$
@@ -139,6 +143,16 @@ LSPI:
     until pi' = pi
 ```
 
+## Monte Carlo methods
+
+[MC](https://en.wikipedia.org/wiki/Monte_Carlo_method) is great for pricing path dependent or exotic options. I did not implement any [variance reduction](https://en.wikipedia.org/wiki/Variance_reduction) methods like control variates, mode matching or cross entropy.
+
+## PDE methods
+
+Black-scholes is the analytical solution of the PDE. Why not solve it numerically instead?
+We may discretize S, but discretizing $log(S)$ is better as we want more points near the center.
+`pricer/pde.py` is from QF5204 course I took. It uses local volatility.
+I wrote my own pde-based pricer in `notebooks/4.ipynb` to price double no touch option using crank-nicolson (CN) scheme. Other options are Douglas schema (instead of 0.5 like in CN, we use `w`) and Euler implicit/explict.
 
 ## Future/Todo
 
