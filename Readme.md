@@ -78,10 +78,6 @@ Factors affecting premium:
 5. Our portfolio is riskless, so has risk-free rate of return.
 6. Use 3, 4 and 5 to eliminate $\Pi$ and receive the BS equation.
 
-$$
-\partial V \over \partial t + rS \partial V \over \partial S + \partial^2 V \over \partial S^2 = 0
-$$
-
 ### Solution
 
 $C(S_t, t) = \phi(d_+)S_t - \phi(d_-)Ke^{-r\tau}$
